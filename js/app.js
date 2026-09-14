@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <span>${cat}</span>
         <span id="val-${cat}">${skillValues[cat]}%</span>
       </div>
-      <input type="range" min="25" max="100" step="25" value="${skillValues[cat]}" data-cat="${cat}" class="wheel-slider accent-stone-800">
+      <input type="range" min="0" max="100" step="25" value="${skillValues[cat]}" data-cat="${cat}" class="wheel-slider accent-stone-800">
     `;
         wheelControls.appendChild(wrapper);
     });
@@ -79,6 +79,8 @@ document.addEventListener('DOMContentLoaded', () => {
             threeWords: document.getElementById('threeWords').value,
             submittedAt: new Date().toISOString()
         };
+
+        console.log('Submitting Payload:', payload);
 
         // UI state: Modal open
         modal.classList.remove('hidden');
