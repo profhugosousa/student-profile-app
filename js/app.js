@@ -2,7 +2,36 @@ document.addEventListener('DOMContentLoaded', () => {
     const categories = ['Reading', 'Speaking', 'Writing', 'Grammar', 'Vocabulary', 'Independent Work', 'Groupwork', 'Listening'];
     const skillValues = { Reading: 50, Speaking: 50, Writing: 50, Grammar: 50, Vocabulary: 50, 'Independent Work': 50, Groupwork: 50, Listening: 50 };
 
-    // 1. Build Control Sliders for the Wheel
+    // --- Dynamic Group Selection Logic ---
+    const yearSelect = document.getElementById('studentYear');
+    const groupSelect = document.getElementById('studentGroup');
+
+    yearSelect.addEventListener('change', () => {
+        const selectedYear = yearSelect.value;
+        groupSelect.innerHTML = '<option value="" disabled selected>Select</option>';
+        groupSelect.disabled = false;
+
+        if (selectedYear === '10.º') {
+            // Letters A to Z for 10.º Year
+            for (let i = 65; i <= 90; i++) {
+                const letter = String.fromCharCode(i);
+                const opt = document.createElement('option');
+                opt.value = letter;
+                opt.textContent = letter;
+                groupSelect.appendChild(opt);
+            }
+        } else if (selectedYear === '7.º' || selectedYear === '9.º') {
+            // Numbers 1 to 10 for 7.º and 9.º Years
+            for (let i = 1; i <= 10; i++) {
+                const opt = document.createElement('option');
+                opt.value = i.toString();
+                opt.textContent = i;
+                groupSelect.appendChild(opt);
+            }
+        }
+    });
+
+    // --- 1. Build Control Sliders for the Wheel ---
     const wheelControls = document.getElementById('wheelControls');
     categories.forEach((cat) => {
         const wrapper = document.createElement('div');
@@ -12,12 +41,12 @@ document.addEventListener('DOMContentLoaded', () => {
         <span>${cat}</span>
         <span id="val-${cat}">${skillValues[cat]}%</span>
       </div>
-      <input type="range" min="0" max="100" step="25" value="${skillValues[cat]}" data-cat="${cat}" class="wheel-slider accent-stone-800">
+      <input type="range" min="25" max="100" step="25" value="${skillValues[cat]}" data-cat="${cat}" class="wheel-slider accent-stone-800">
     `;
         wheelControls.appendChild(wrapper);
     });
 
-    // 2. Initialize Radar Chart
+    // --- 2. Initialize Radar Chart ---
     const ctx = document.getElementById('wheelChart').getContext('2d');
     const radarChart = new Chart(ctx, {
         type: 'radar',
@@ -45,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 3. Sync Sliders with Radar Chart
+    // --- 3. Sync Sliders with Radar Chart ---
     document.querySelectorAll('.wheel-slider').forEach((slider) => {
         slider.addEventListener('input', (e) => {
             const cat = e.target.dataset.cat;
@@ -57,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // 4. Form Submission Handling
+    // --- 4. Form Submission Handling ---
     const form = document.getElementById('worksheetForm');
     const modal = document.getElementById('statusModal');
     const modalTitle = document.getElementById('modalTitle');
@@ -68,21 +97,20 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
 
         const payload = {
-            studentName: document.getElementById('studentName').value,
-            hobbies: document.getElementById('hobbies').value,
-            presentation: document.getElementById('presentation').value,
+            studentName: document.getElementById('studentName')?.value || '',
+            studentYear: yearSelect?.value || '',
+            studentGroup: groupSelect?.value || '',
+            hobbies: document.getElementById('hobbies')?.value || '',
+            presentation: document.getElementById('presentation')?.value || '',
             skills: skillValues,
-            wheelComments: document.getElementById('wheelComments').value,
-            lessonInThis: document.getElementById('lessonInThis').value,
-            lessonStudents: document.getElementById('lessonStudents').value,
-            lessonTeacher: document.getElementById('lessonTeacher').value,
-            threeWords: document.getElementById('threeWords').value,
+            wheelComments: document.getElementById('wheelComments')?.value || '',
+            lessonInThis: document.getElementById('lessonInThis')?.value || '',
+            lessonStudents: document.getElementById('lessonStudents')?.value || '',
+            lessonTeacher: document.getElementById('lessonTeacher')?.value || '',
+            threeWords: document.getElementById('threeWords')?.value || '',
             submittedAt: new Date().toISOString()
         };
 
-        console.log('Submitting Payload:', payload);
-
-        // UI state: Modal open
         modal.classList.remove('hidden');
         modalTitle.innerText = 'Submitting...';
         modalMessage.innerText = 'Please wait while your answers are saved.';
@@ -93,6 +121,8 @@ document.addEventListener('DOMContentLoaded', () => {
             modalTitle.innerText = 'Submitted!';
             modalMessage.innerText = 'Your worksheet has been saved successfully.';
             form.reset();
+            groupSelect.innerHTML = '<option value="" disabled selected>-</option>';
+            groupSelect.disabled = true;
         } catch (err) {
             modalTitle.innerText = 'Error';
             modalMessage.innerText = 'Failed to submit. Please try again.';
