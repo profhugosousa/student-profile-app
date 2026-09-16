@@ -98,6 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const payload = {
             studentName: document.getElementById('studentName')?.value || '',
+            studentEmail: document.getElementById('studentEmail')?.value || '',
             studentYear: yearSelect?.value || '',
             studentGroup: groupSelect?.value || '',
             hobbies: document.getElementById('hobbies')?.value || '',
