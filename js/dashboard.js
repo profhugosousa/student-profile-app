@@ -34,7 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Success: Save key to session, hide lock screen, and load data
             sessionStorage.setItem('dashboard_passkey', key);
             rawData = data;
             authScreen.classList.add('hidden');
@@ -51,20 +50,42 @@ document.addEventListener('DOMContentLoaded', () => {
         const filterGroup = document.getElementById('filterGroup');
         const filterStudent = document.getElementById('filterStudent');
 
+        // Helper function for safe string normalization
+        function safeString(val) {
+            return (val !== undefined && val !== null) ? String(val).trim() : '';
+        }
+
         function updateGroupFilter() {
-            const year = filterYear.value;
+            const selectedYear = filterYear.value;
+            const currentSelectedGroup = filterGroup.value;
+
             filterGroup.innerHTML = '<option value="ALL">All Groups</option>';
             let options = new Set();
 
             rawData.forEach(item => {
-                if ((year === 'ALL' || item['Year'] === year) && item['Group']) {
-                    options.add(item['Group']);
+                const itemYear = safeString(item['Year']);
+                const itemGroup = safeString(item['Group']);
+
+                if ((selectedYear === 'ALL' || itemYear === selectedYear) && itemGroup) {
+                    options.add(itemGroup);
                 }
             });
 
-            Array.from(options).sort().forEach(g => {
+            // Sort natural alphanumeric order (e.g. 1, 2, 10, A, B)
+            const sortedGroups = Array.from(options).sort((a, b) =>
+                a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+            );
+
+            sortedGroups.forEach(g => {
                 filterGroup.innerHTML += `<option value="${g}">${g}</option>`;
             });
+
+            // Maintain active group selection if still valid for the selected year
+            if (options.has(currentSelectedGroup)) {
+                filterGroup.value = currentSelectedGroup;
+            } else {
+                filterGroup.value = 'ALL';
+            }
         }
 
         function updateStudentFilter() {
@@ -78,8 +99,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function getFilteredData() {
             return rawData.filter(item => {
-                const yearMatch = filterYear.value === 'ALL' || item['Year'] === filterYear.value;
-                const groupMatch = filterGroup.value === 'ALL' || item['Group'] === filterGroup.value;
+                const itemYear = safeString(item['Year']);
+                const itemGroup = safeString(item['Group']);
+
+                const yearMatch = filterYear.value === 'ALL' || itemYear === filterYear.value;
+                const groupMatch = filterGroup.value === 'ALL' || itemGroup === filterGroup.value;
+
                 return yearMatch && groupMatch;
             });
         }
@@ -91,19 +116,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const tbody = document.getElementById('studentTableBody');
             tbody.innerHTML = '';
-            filtered.forEach(s => {
-                const tr = document.createElement('tr');
-                tr.className = 'border-b border-stone-300 hover:bg-stone-100';
-                tr.innerHTML = `
-          <td class="p-2 font-bold">${s['Student Name']}</td>
-          <td class="p-2 text-xs">${s['Student Email']}</td>
-          <td class="p-2">${s['Year']}</td>
-          <td class="p-2">${s['Group']}</td>
-          <td class="p-2"><button data-email="${s['Student Email']}" class="view-btn text-xs bg-stone-800 text-white px-2 py-1">View</button></td>
-        `;
-                tbody.appendChild(tr);
-            });
 
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-stone-500 font-semibold">No students found for the selected filters.</td></tr>`;
+            } else {
+                filtered.forEach(s => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b border-stone-300 hover:bg-stone-100';
+                    tr.innerHTML = `
+            <td class="p-2 font-bold">${s['Student Name']}</td>
+            <td class="p-2 text-xs">${s['Student Email']}</td>
+            <td class="p-2">${s['Year']}</td>
+            <td class="p-2">${s['Group']}</td>
+            <td class="p-2"><button data-email="${s['Student Email']}" class="view-btn text-xs bg-stone-800 text-white px-2 py-1 hover:bg-stone-700">View</button></td>
+          `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // Calculate Radar Skill Averages for Filtered Group
             const averages = skillsList.map(skill => {
                 if (!filtered.length) return 0;
                 const sum = filtered.reduce((acc, curr) => acc + (parseFloat(curr[skill]) || 0), 0);
@@ -116,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 data: {
                     labels: skillsList,
                     datasets: [{
-                        label: 'Cohort Average',
+                        label: filterYear.value === 'ALL' ? 'Overall Average' : `${filterYear.value} (Grp ${filterGroup.value}) Average`,
                         data: averages,
                         backgroundColor: 'rgba(41, 37, 36, 0.2)',
                         borderColor: 'rgba(41, 37, 36, 1)',
@@ -129,9 +160,11 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.view-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const email = e.target.dataset.email;
-                    const studentIndex = filtered.findIndex(s => s['Student Email'] === email);
-                    filterStudent.value = studentIndex;
-                    renderIndividualStudent(filtered[studentIndex]);
+                    const studentIndex = filtered.findIndex(s => safeString(s['Student Email']) === email);
+                    if (studentIndex !== -1) {
+                        filterStudent.value = studentIndex;
+                        renderIndividualStudent(filtered[studentIndex]);
+                    }
                 });
             });
         }
@@ -140,7 +173,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('overviewSection').classList.add('hidden');
             document.getElementById('studentDetailSection').classList.remove('hidden');
 
-            document.getElementById('detailName').innerText = student['Student Name'];
+            document.getElementById('detailName').innerText = student['Student Name'] || 'N/A';
             document.getElementById('detailMeta').innerText = `${student['Student Email']} | Year: ${student['Year']} | Group: ${student['Group']}`;
             document.getElementById('detailHobbies').innerText = student['Hobbies'] || 'N/A';
             document.getElementById('detailPresentation').innerText = student['Presentation Topic'] || 'N/A';
@@ -154,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 data: {
                     labels: skillsList,
                     datasets: [{
-                        label: `${student['Student Name']}'s Skills`,
+                        label: `${student['Student Name']}'s Profile`,
                         data: studentSkills,
                         backgroundColor: 'rgba(79, 70, 229, 0.2)',
                         borderColor: 'rgba(79, 70, 229, 1)',
@@ -165,17 +198,33 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        filterYear.addEventListener('change', () => { updateGroupFilter(); updateStudentFilter(); renderOverview(); });
-        filterGroup.addEventListener('change', () => { updateStudentFilter(); renderOverview(); });
-        filterStudent.addEventListener('change', (e) => {
-            if (e.target.value === 'ALL') renderOverview();
-            else renderIndividualStudent(getFilteredData()[e.target.value]);
+        // Event Listeners for Filters
+        filterYear.addEventListener('change', () => {
+            updateGroupFilter();
+            updateStudentFilter();
+            renderOverview();
         });
+
+        filterGroup.addEventListener('change', () => {
+            updateStudentFilter();
+            renderOverview();
+        });
+
+        filterStudent.addEventListener('change', (e) => {
+            if (e.target.value === 'ALL') {
+                renderOverview();
+            } else {
+                const filtered = getFilteredData();
+                renderIndividualStudent(filtered[e.target.value]);
+            }
+        });
+
         document.getElementById('closeDetailBtn').addEventListener('click', () => {
             filterStudent.value = 'ALL';
             renderOverview();
         });
 
+        // Initial Load Execution
         updateGroupFilter();
         updateStudentFilter();
         renderOverview();
