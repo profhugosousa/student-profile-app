@@ -1,5 +1,5 @@
-// Change this URL after deploying your Google Apps Script Web App
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyX8Q4tH6O1kw6wfrwVX_7qnq15aUIVNHl9_mui-DlhsmnsZbAz2-TXUDmjbHwtUv8/exec';
+const GOOGLE_SCRIPT_URL_ESAS = 'https://script.google.com/macros/s/AKfycbyX8Q4tH6O1kw6wfrwVX_7qnq15aUIVNHl9_mui-DlhsmnsZbAz2-TXUDmjbHwtUv8/exec';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwM3zu9zeR9NhsrQFY0rlD0fHkkNWzewxdFf_2T85QXbb1hG_M21--mxhL70uTsuc_F/exec';
 
 /**
  * Submits the worksheet payload to Google Apps Script backend
